@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi Number Search</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        input, button { padding: 10px; margin: 10px; }
+        #result { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Search for Numbers in Pi</h1>
+    <p>Enter a number sequence to search within the first 1 million digits of Pi:</p>
+    <input type="text" id="searchInput" placeholder="Enter numbers...">
+    <button onclick="searchPi()">Search</button>
+    <p id="result"></p>
+    
+    <script>
+        async function searchPi() {
+            let sequence = document.getElementById("searchInput").value;
+            if (!sequence) {
+                document.getElementById("result").innerText = "Please enter a number sequence.";
+                return;
+            }
+            
+            const response = await fetch("https://api.pi.delivery/v1/pi?start=0&numberOfDigits=1000000");
+            const data = await response.json();
+            let piDigits = data.content;
+            
+            let position = piDigits.indexOf(sequence);
+            if (position !== -1) {
+                document.getElementById("result").innerText = `Found at position: ${position}`;
+            } else {
+                document.getElementById("result").innerText = "Sequence not found in first 1 million digits.";
+            }
+        }
+    </script>
+</body>
+</html>
