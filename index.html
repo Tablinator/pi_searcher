@@ -13,7 +13,7 @@
         }
         .ticker-container {
             width: 100%;
-            height: 20px;
+            height: 20px; /* Increased height */
             background: #007bff;
             color: white;
             overflow: hidden;
@@ -30,11 +30,12 @@
             white-space: nowrap;
             animation: ticker 5s linear infinite;
         }
-        @keyframes ticker {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
-        
+@keyframes ticker {
+    0% { transform: translateX(100%); visibility: visible; }
+    95% { visibility: visible; }  /* Keeps it visible while moving */
+    100% { transform: translateX(-100%); visibility: hidden; } /* Hides when fully off-screen */
+}
+
         input {
             padding: 10px;
             margin: 10px;
@@ -51,106 +52,102 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
         }
         #result {
             margin-top: 20px;
             font-weight: bold;
             font-size: 18px;
         }
-        .settings-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #007bff;
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .settings-panel {
-            display: none;
-            position: fixed;
-            bottom: 50px;
-            right: 20px;
-            background: white;
-            padding: 20px;
-            border: 2px solid #007bff;
-            border-radius: 5px;
-        }
+        .grey { color: grey; }
+        .black { color: black; font-weight: bold; }
     </style>
 </head>
 <body>
+
     <div class="ticker-container">
         <div class="ticker-text" id="piTicker">Loading Pi facts...</div>
     </div>
 
     <h1>Search for Numbers in Pi</h1>
-    <p>Enter a number sequence to search within Pi digits:</p>
+    <p>Enter a number sequence to search within the first 100 million digits of Pi:</p>
     <input type="text" id="searchInput" placeholder="Enter numbers...">
     <button onclick="searchPi()">Search</button>
+    <button onclick="toggleLetterMode()">Letter Mode</button>
     <p id="result"></p>
-
-    <button class="settings-button" onclick="toggleSettings()">⚙ Settings</button>
-    <div class="settings-panel" id="settingsPanel">
-        <label>Digits to Check:</label>
-        <input type="number" id="digitLimit" value="1000000" min="10000" max="2000000000">
-        <button onclick="saveSettings()">Save</button>
-    </div>
     
     <script>
-        let digitLimit = 1000000; // Default 1M digits
+        let letterMode = false;
 
-        function toggleSettings() {
-            let panel = document.getElementById("settingsPanel");
-            panel.style.display = panel.style.display === "none" ? "block" : "none";
+        function toggleLetterMode() {
+            letterMode = !letterMode;
+            document.getElementById("searchInput").placeholder = letterMode ? "Enter letters..." : "Enter numbers...";
         }
 
-        function saveSettings() {
-            let newLimit = parseInt(document.getElementById("digitLimit").value);
-            if (newLimit >= 10000 && newLimit <= 2000000000) {
-                digitLimit = newLimit;
-                alert("Settings saved!");
-            } else {
-                alert("Enter a value between 10,000 and 2 billion.");
-            }
+        function convertLettersToNumbers(input) {
+            return input.toLowerCase().split('').map(char => {
+                let code = char.charCodeAt(0);
+                return code >= 97 && code <= 122 ? (code - 97).toString() : char;
+            }).join('');
         }
 
         async function searchPi() {
             let sequence = document.getElementById("searchInput").value;
             let resultElement = document.getElementById("result");
+
             if (!sequence) {
                 resultElement.innerText = "Please enter a valid input.";
                 return;
             }
 
-            let piDigits = "";
-            let chunkSize = 1000000;
-            let found = false;
-
-            for (let start = 0; start < digitLimit; start += chunkSize) {
-                try {
-                    let response = await fetch(`https://api.pi.delivery/v1/pi?start=${start}&numberOfDigits=${chunkSize}&radix=10`);
-                    let data = await response.json();
-                    piDigits += data.content;
-                    
-                    let position = piDigits.indexOf(sequence);
-                    if (position !== -1) {
-                        let before = piDigits.slice(Math.max(0, position - 5), position);
-                        let after = piDigits.slice(position + sequence.length, position + sequence.length + 5);
-                        resultElement.innerHTML = `<span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>`;
-                        found = true;
-                        break;
-                    }
-                } catch (error) {
-                    resultElement.innerText = "Error fetching data. Try again later.";
-                    return;
-                }
+            if (letterMode) {
+                sequence = convertLettersToNumbers(sequence);
             }
 
-            if (!found) {
-                resultElement.innerText = "Sequence not found in the given number of digits.";
+            try {
+                let response = await fetch(https://api.pi.delivery/v1/pi?start=0&numberOfDigits=1000000&radix=10);
+                let data = await response.json();
+                let piDigits = data.content;
+
+                let position = piDigits.indexOf(sequence);
+
+                if (position !== -1) {
+                    let before = piDigits.slice(Math.max(0, position - 5), position);
+                    let after = piDigits.slice(position + sequence.length, position + sequence.length + 5);
+                    resultElement.innerHTML = <span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>;
+                } else {
+                    resultElement.innerText = "Sequence not found in first 1 million digits.";
+                }
+            } catch (error) {
+                resultElement.innerText = "Error fetching data. Try again later.";
             }
         }
+
+        async function loadPiFacts() {
+            try {
+                let response = await fetch('list.json');
+                let facts = await response.json();
+                let piTicker = document.getElementById("piTicker");
+                
+                function updateTicker() {
+                    let randomFact = facts[Math.floor(Math.random() * facts.length)];
+                    piTicker.innerText = randomFact;
+                    piTicker.style.animation = "none";
+                    void piTicker.offsetWidth;
+                    piTicker.style.animation = "ticker 15s linear infinite";
+                }
+
+                updateTicker();
+                setInterval(updateTicker, 15000);
+            } catch (error) {
+                document.getElementById("piTicker").innerText = "Error loading Pi facts.";
+            }
+        }
+
+        loadPiFacts();
     </script>
 </body>
 </html>
