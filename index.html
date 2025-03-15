@@ -11,22 +11,22 @@
             padding: 20px;
             background-color: #f4f4f4;
         }
-.ticker-container {
-    width: 100%;
-    height: 10px; /* Increase height */
-    background: #007bff;
-    color: white;
-    overflow: hidden;
-    white-space: nowrap;
-    position: relative;
-    padding: 15px 0; /* Add more padding for better spacing */
-    font-size: 18px; /* Slightly larger text */
-    font-weight: bold;
-}
-
+        .ticker-container {
+            width: 100%;
+            height: 40px; /* Increased height */
+            background: #007bff;
+            color: white;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            padding: 15px 0;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .ticker-text {
-            display: inline-block;
-            position: absolute;
             white-space: nowrap;
             animation: ticker 15s linear infinite;
         }
@@ -60,41 +60,14 @@
             font-weight: bold;
             font-size: 18px;
         }
-        #loading {
-            display: none;
-            width: 100%;
-            height: 5px;
-            background: lightgray;
-            position: relative;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-        #loading::after {
-            content: "";
-            width: 50%;
-            height: 100%;
-            background: #007bff;
-            position: absolute;
-            left: -50%;
-            animation: loading 1s infinite;
-        }
-        @keyframes loading {
-            0% { left: -50%; }
-            100% { left: 100%; }
-        }
-        .grey {
-            color: grey;
-        }
-        .black {
-            color: black;
-            font-weight: bold;
-        }
+        .grey { color: grey; }
+        .black { color: black; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="ticker-container">
-        <div class="ticker-text" id="piTicker"></div>
+        <div class="ticker-text" id="piTicker">Loading Pi facts...</div>
     </div>
 
     <h1>Search for Numbers in Pi</h1>
@@ -102,7 +75,6 @@
     <input type="text" id="searchInput" placeholder="Enter numbers...">
     <button onclick="searchPi()">Search</button>
     <button onclick="toggleLetterMode()">Letter Mode</button>
-    <div id="loading"></div>
     <p id="result"></p>
     
     <script>
@@ -120,17 +92,9 @@
             }).join('');
         }
 
-        async function fetchPiChunk(start, digits) {
-            const response = await fetch(`https://api.pi.delivery/v1/pi?start=${start}&numberOfDigits=1000&radix=10`);
-            if (!response.ok) throw new Error("Failed to fetch Pi data");
-            const data = await response.json();
-            return data.content;
-        }
-
         async function searchPi() {
             let sequence = document.getElementById("searchInput").value;
             let resultElement = document.getElementById("result");
-            let loadingElement = document.getElementById("loading");
 
             if (!sequence) {
                 resultElement.innerText = "Please enter a valid input.";
@@ -141,86 +105,47 @@
                 sequence = convertLettersToNumbers(sequence);
             }
 
-            loadingElement.style.display = "block";
-            resultElement.innerText = "";
+            try {
+                let response = await fetch(`https://api.pi.delivery/v1/pi?start=0&numberOfDigits=1000000&radix=10`);
+                let data = await response.json();
+                let piDigits = data.content;
 
-            let start = 0;
-            const chunkSize = 1000000;
-            const maxDigits = 100000000;
-            let found = false;
-            let averageTimePerChunk = 0;
+                let position = piDigits.indexOf(sequence);
 
-            while (start < maxDigits) {
-                let requestStart = Date.now();
+                if (position !== -1) {
+                    let before = piDigits.slice(Math.max(0, position - 5), position);
+                    let after = piDigits.slice(position + sequence.length, position + sequence.length + 5);
+                    resultElement.innerHTML = `<span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>`;
+                } else {
+                    resultElement.innerText = "Sequence not found in first 1 million digits.";
+                }
+            } catch (error) {
+                resultElement.innerText = "Error fetching data. Try again later.";
+            }
+        }
+
+        async function loadPiFacts() {
+            try {
+                let response = await fetch('list.json');
+                let facts = await response.json();
+                let piTicker = document.getElementById("piTicker");
                 
-                try {
-                    let piDigits = await fetchPiChunk(start, chunkSize);
-                    let requestEnd = Date.now();
-                    
-                    let requestTime = requestEnd - requestStart;
-                    averageTimePerChunk = averageTimePerChunk === 0 ? requestTime : (averageTimePerChunk + requestTime) / 2;
-
-                    let position = piDigits.indexOf(sequence);
-
-                    if (position !== -1) {
-                        let before = piDigits.slice(Math.max(0, position - 5), position);
-                        let after = piDigits.slice(position + sequence.length, position + sequence.length + 5);
-
-                        resultElement.innerHTML = `<span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>`;
-                        found = true;
-                        break;
-                    }
-                } catch (error) {
-                    resultElement.innerText = "Error fetching data. Try again later.";
-                    loadingElement.style.display = "none";
-                    return;
+                function updateTicker() {
+                    let randomFact = facts[Math.floor(Math.random() * facts.length)];
+                    piTicker.innerText = randomFact;
+                    piTicker.style.animation = "none";
+                    void piTicker.offsetWidth;
+                    piTicker.style.animation = "ticker 15s linear infinite";
                 }
 
-                start += chunkSize;
-                let chunksRemaining = (maxDigits - start) / chunkSize;
-                let estimatedTime = Math.round((chunksRemaining * averageTimePerChunk) / 1000);
-                resultElement.innerText = `Searching... Estimated wait time: ~${estimatedTime} seconds`;
+                updateTicker();
+                setInterval(updateTicker, 15000);
+            } catch (error) {
+                document.getElementById("piTicker").innerText = "Error loading Pi facts.";
             }
-
-            if (!found) {
-                resultElement.innerText = "Sequence not found in first 100 million digits.";
-            }
-
-            loadingElement.style.display = "none";
         }
 
-        // Fun Facts About Pi for the Ticker
-        const piFacts = [
-            "Pi is an irrational number, meaning it has no repeating pattern.",
-            "Pi has been calculated to over 62 trillion digits!",
-            "NASA uses only 15 digits of Pi for interplanetary calculations.",
-            "Pi Day is celebrated on March 14th (3/14) each year.",
-            "The Guinness World Record for reciting Pi is over 70,000 digits!",
-            "Archimedes of Syracuse approximated Pi over 2,000 years ago.",
-            "Pi is used in physics, engineering, and even probability theory.",
-            "Albert Einstein was born on Pi Day!",
-            "Pi appears in formulas related to circles, waves, and quantum mechanics.",
-            "Some people memorize thousands of Pi digits as a mental challenge."
-        ];
-
-        function startTicker() {
-            let ticker = document.getElementById("piTicker");
-            let index = 0;
-
-            function updateTicker() {
-                ticker.innerText = piFacts[index];
-                ticker.style.animation = "none";
-                void ticker.offsetWidth; // Reset animation
-                ticker.style.animation = "ticker 15s linear infinite";
-                index = (index + 1) % piFacts.length;
-            }
-
-            updateTicker();
-            setInterval(updateTicker, 15000);
-        }
-
-        startTicker();
-
+        loadPiFacts();
     </script>
 </body>
 </html>
