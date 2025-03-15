@@ -71,7 +71,7 @@
     
     <script>
         async function fetchPiChunk(start, digits) {
-            const response = await fetch(`https://api.pi.delivery/v1/pi?start=${start}&numberOfDigits=${digits}&radix=10`);
+            const response = await fetch(`https://api.pi.delivery/v1/pi?start=${start}&numberOfDigits=1000&radix=10`);
             if (!response.ok) throw new Error("Failed to fetch Pi data");
             const data = await response.json();
             return data.content;
