@@ -19,22 +19,12 @@
             color: white;
             overflow: hidden;
             white-space: nowrap;
-            position: relative;
             padding: 15px 0;
             font-size: 18px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        .ticker-text {
-            white-space: nowrap;
-            animation: ticker 5s linear infinite;
-        }
-        @keyframes ticker {
-            0% { transform: translateX(100%); visibility: visible; }
-            95% { visibility: visible; }
-            100% { transform: translateX(-100%); visibility: hidden; }
         }
         input, button {
             padding: 10px;
@@ -58,7 +48,6 @@
         }
         .grey { color: grey; }
         .black { color: black; font-weight: bold; }
-        /* Settings Button */
         .settings-btn {
             position: fixed;
             bottom: 20px;
@@ -71,7 +60,6 @@
             border: none;
             cursor: pointer;
         }
-        /* Settings Window */
         .settings-window {
             display: none;
             position: fixed;
@@ -88,7 +76,7 @@
 <body>
 
     <div class="ticker-container">
-        <div class="ticker-text" id="piTicker">Loading Pi facts...</div>
+        <div id="piTicker">Loading Pi facts...</div>
     </div>
 
     <h1>Search for Numbers in Pi</h1>
@@ -111,7 +99,7 @@
 
     <script>
         let letterMode = false;
-        let maxDigits = 1000000;  // Default search range
+        let maxDigits = 1000000;
 
         function toggleLetterMode() {
             letterMode = !letterMode;
@@ -129,6 +117,7 @@
                 maxDigits = newDigits;
             } else {
                 alert("Enter a value between 10,000 and 2 billion.");
+                document.getElementById("digitInput").value = maxDigits;
             }
             document.getElementById("settingsWindow").style.display = "none";
         }
@@ -157,26 +146,25 @@
             resultElement.innerText = "";
             loadingStatus.innerText = "Fetching Pi digits...";
 
-            let piDigits = "";
-            let chunkSize = 100000; // Request in 100,000 digit chunks
+            let chunkSize = 1000000;
             let start = 0;
 
             while (start < maxDigits) {
                 try {
                     let response = await fetch(`https://api.pi.delivery/v1/pi?start=${start}&numberOfDigits=${chunkSize}&radix=10`);
+                    if (!response.ok) throw new Error("API Error");
                     let data = await response.json();
-                    piDigits += data.content;
                     
-                    loadingStatus.innerText = `Loaded ${start + chunkSize} / ${maxDigits} digits...`;
-
-                    let position = piDigits.indexOf(sequence);
+                    let position = data.content.indexOf(sequence);
                     if (position !== -1) {
-                        let before = piDigits.slice(Math.max(0, position - 5), position);
-                        let after = piDigits.slice(position + sequence.length, position + sequence.length + 5);
+                        let before = data.content.slice(Math.max(0, position - 5), position);
+                        let after = data.content.slice(position + sequence.length, position + sequence.length + 5);
                         resultElement.innerHTML = `<span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>`;
                         loadingStatus.innerText = "Search complete!";
                         return;
                     }
+
+                    loadingStatus.innerText = `Loaded ${start + chunkSize} / ${maxDigits} digits...`;
                 } catch (error) {
                     resultElement.innerText = "Error fetching data. Try again later.";
                     return;
