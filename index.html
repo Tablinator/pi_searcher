@@ -108,7 +108,7 @@
             }
 
             try {
-                let response = await fetch(https://api.pi.delivery/v1/pi?start=0&numberOfDigits=1000000&radix=10);
+                let response = await fetch("https://api.pi.delivery/v1/pi?start=0&numberOfDigits=1000000&radix=10");
                 let data = await response.json();
                 let piDigits = data.content;
 
@@ -117,7 +117,7 @@
                 if (position !== -1) {
                     let before = piDigits.slice(Math.max(0, position - 5), position);
                     let after = piDigits.slice(position + sequence.length, position + sequence.length + 5);
-                    resultElement.innerHTML = <span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>;
+                    resultElement.innerHTML = `<span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>`;
                 } else {
                     resultElement.innerText = "Sequence not found in first 1 million digits.";
                 }
