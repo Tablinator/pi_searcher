@@ -11,6 +11,27 @@
             padding: 20px;
             background-color: #f4f4f4;
         }
+        .ticker-container {
+            width: 100%;
+            background: #007bff;
+            color: white;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            padding: 10px 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .ticker-text {
+            display: inline-block;
+            position: absolute;
+            white-space: nowrap;
+            animation: ticker 15s linear infinite;
+        }
+        @keyframes ticker {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
         input {
             padding: 10px;
             margin: 10px;
@@ -69,6 +90,11 @@
     </style>
 </head>
 <body>
+
+    <div class="ticker-container">
+        <div class="ticker-text" id="piTicker"></div>
+    </div>
+
     <h1>Search for Numbers in Pi</h1>
     <p>Enter a number sequence to search within the first 100 million digits of Pi:</p>
     <input type="text" id="searchInput" placeholder="Enter numbers...">
@@ -100,71 +126,98 @@
         }
 
         async function searchPi() {
-    let sequence = document.getElementById("searchInput").value;
-    let resultElement = document.getElementById("result");
-    let loadingElement = document.getElementById("loading");
+            let sequence = document.getElementById("searchInput").value;
+            let resultElement = document.getElementById("result");
+            let loadingElement = document.getElementById("loading");
 
-    if (!sequence) {
-        resultElement.innerText = "Please enter a valid input.";
-        return;
-    }
-
-    if (letterMode) {
-        sequence = convertLettersToNumbers(sequence);
-    }
-
-    loadingElement.style.display = "block";
-    resultElement.innerText = "";
-
-    let start = 0;
-    const chunkSize = 1000000;
-    const maxDigits = 100000000;
-    let found = false;
-    let averageTimePerChunk = 0;
-    let startTime = Date.now();
-
-    while (start < maxDigits) {
-        let requestStart = Date.now();
-        
-        try {
-            let piDigits = await fetchPiChunk(start, chunkSize);
-            let requestEnd = Date.now();
-            
-            // Update average request time
-            let requestTime = requestEnd - requestStart;
-            averageTimePerChunk = averageTimePerChunk === 0 ? requestTime : (averageTimePerChunk + requestTime) / 2;
-
-            let position = piDigits.indexOf(sequence);
-
-            if (position !== -1) {
-                let before = piDigits.slice(Math.max(0, position - 5), position);
-                let after = piDigits.slice(position + sequence.length, position + sequence.length + 5);
-
-                resultElement.innerHTML = `<span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>`;
-                found = true;
-                break;
+            if (!sequence) {
+                resultElement.innerText = "Please enter a valid input.";
+                return;
             }
-        } catch (error) {
-            resultElement.innerText = "Error fetching data. Try again later.";
+
+            if (letterMode) {
+                sequence = convertLettersToNumbers(sequence);
+            }
+
+            loadingElement.style.display = "block";
+            resultElement.innerText = "";
+
+            let start = 0;
+            const chunkSize = 1000000;
+            const maxDigits = 100000000;
+            let found = false;
+            let averageTimePerChunk = 0;
+
+            while (start < maxDigits) {
+                let requestStart = Date.now();
+                
+                try {
+                    let piDigits = await fetchPiChunk(start, chunkSize);
+                    let requestEnd = Date.now();
+                    
+                    let requestTime = requestEnd - requestStart;
+                    averageTimePerChunk = averageTimePerChunk === 0 ? requestTime : (averageTimePerChunk + requestTime) / 2;
+
+                    let position = piDigits.indexOf(sequence);
+
+                    if (position !== -1) {
+                        let before = piDigits.slice(Math.max(0, position - 5), position);
+                        let after = piDigits.slice(position + sequence.length, position + sequence.length + 5);
+
+                        resultElement.innerHTML = `<span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>`;
+                        found = true;
+                        break;
+                    }
+                } catch (error) {
+                    resultElement.innerText = "Error fetching data. Try again later.";
+                    loadingElement.style.display = "none";
+                    return;
+                }
+
+                start += chunkSize;
+                let chunksRemaining = (maxDigits - start) / chunkSize;
+                let estimatedTime = Math.round((chunksRemaining * averageTimePerChunk) / 1000);
+                resultElement.innerText = `Searching... Estimated wait time: ~${estimatedTime} seconds`;
+            }
+
+            if (!found) {
+                resultElement.innerText = "Sequence not found in first 100 million digits.";
+            }
+
             loadingElement.style.display = "none";
-            return;
         }
 
-        start += chunkSize;
+        // Fun Facts About Pi for the Ticker
+        const piFacts = [
+            "Pi is an irrational number, meaning it has no repeating pattern.",
+            "Pi has been calculated to over 62 trillion digits!",
+            "NASA uses only 15 digits of Pi for interplanetary calculations.",
+            "Pi Day is celebrated on March 14th (3/14) each year.",
+            "The Guinness World Record for reciting Pi is over 70,000 digits!",
+            "Archimedes of Syracuse approximated Pi over 2,000 years ago.",
+            "Pi is used in physics, engineering, and even probability theory.",
+            "Albert Einstein was born on Pi Day!",
+            "Pi appears in formulas related to circles, waves, and quantum mechanics.",
+            "Some people memorize thousands of Pi digits as a mental challenge."
+        ];
 
-        // Calculate estimated remaining time
-        let chunksRemaining = (maxDigits - start) / chunkSize;
-        let estimatedTime = Math.round((chunksRemaining * averageTimePerChunk) / 1000); // Convert to seconds
+        function startTicker() {
+            let ticker = document.getElementById("piTicker");
+            let index = 0;
 
-        resultElement.innerText = `Searching... Estimated wait time: ~${estimatedTime} seconds`;
-    }
+            function updateTicker() {
+                ticker.innerText = piFacts[index];
+                ticker.style.animation = "none";
+                void ticker.offsetWidth; // Reset animation
+                ticker.style.animation = "ticker 15s linear infinite";
+                index = (index + 1) % piFacts.length;
+            }
 
-    if (!found) {
-        resultElement.innerText = "Sequence not found in first 100 million digits.";
-    }
+            updateTicker();
+            setInterval(updateTicker, 15000);
+        }
 
-    loadingElement.style.display = "none";
-}
+        startTicker();
 
     </script>
 </body>
