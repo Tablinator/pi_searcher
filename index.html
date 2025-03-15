@@ -8,33 +8,49 @@
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
         input, button { padding: 10px; margin: 10px; }
         #result { margin-top: 20px; font-weight: bold; }
+        #loading { display: none; width: 100%; height: 5px; background: lightgray; position: relative; overflow: hidden; }
+        #loading::after { content: ""; width: 50%; height: 100%; background: blue; position: absolute; left: -50%; animation: loading 1s infinite; }
+        @keyframes loading { 0% { left: -50%; } 100% { left: 100%; } }
     </style>
 </head>
 <body>
     <h1>Search for Numbers in Pi</h1>
-    <p>Enter a number sequence to search within the first 1 million digits of Pi:</p>
+    <p>Enter a number sequence to search within the first 100 million digits of Pi:</p>
     <input type="text" id="searchInput" placeholder="Enter numbers...">
     <button onclick="searchPi()">Search</button>
+    <div id="loading"></div>
     <p id="result"></p>
     
     <script>
         async function searchPi() {
             let sequence = document.getElementById("searchInput").value;
+            let resultElement = document.getElementById("result");
+            let loadingElement = document.getElementById("loading");
+            
             if (!sequence) {
-                document.getElementById("result").innerText = "Please enter a number sequence.";
+                resultElement.innerText = "Please enter a number sequence.";
                 return;
             }
             
-            const response = await fetch("https://api.pi.delivery/v1/pi?start=0&numberOfDigits=1000000");
-            const data = await response.json();
-            let piDigits = data.content;
+            loadingElement.style.display = "block";
+            resultElement.innerText = "";
             
-            let position = piDigits.indexOf(sequence);
-            if (position !== -1) {
-                document.getElementById("result").innerText = `Found at position: ${position}`;
-            } else {
-                document.getElementById("result").innerText = "Sequence not found in first 1 million digits.";
+            try {
+                const response = await fetch("https://api.pi.delivery/v1/pi?start=0&numberOfDigits=100000000");
+                const data = await response.json();
+                let piDigits = data.content;
+                
+                let position = piDigits.indexOf(sequence);
+                if (position !== -1) {
+                    resultElement.innerText = `Found at position: ${position}`;
+                } else {
+                    resultElement.innerText = "Sequence not found in first 100 million digits.";
+                }
+            } catch (error) {
+                resultElement.innerText = "Error fetching data. Try again later.";
             }
+            
+            loadingElement.style.display = "none";
         }
     </script>
 </body>
