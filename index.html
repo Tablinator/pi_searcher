@@ -100,52 +100,72 @@
         }
 
         async function searchPi() {
-            let sequence = document.getElementById("searchInput").value;
-            let resultElement = document.getElementById("result");
-            let loadingElement = document.getElementById("loading");
-            
-            if (!sequence) {
-                resultElement.innerText = "Please enter a valid input.";
-                return;
-            }
+    let sequence = document.getElementById("searchInput").value;
+    let resultElement = document.getElementById("result");
+    let loadingElement = document.getElementById("loading");
 
-            if (letterMode) {
-                sequence = convertLettersToNumbers(sequence);
+    if (!sequence) {
+        resultElement.innerText = "Please enter a valid input.";
+        return;
+    }
+
+    if (letterMode) {
+        sequence = convertLettersToNumbers(sequence);
+    }
+
+    loadingElement.style.display = "block";
+    resultElement.innerText = "";
+
+    let start = 0;
+    const chunkSize = 1000000;
+    const maxDigits = 100000000;
+    let found = false;
+    let averageTimePerChunk = 0;
+    let startTime = Date.now();
+
+    while (start < maxDigits) {
+        let requestStart = Date.now();
+        
+        try {
+            let piDigits = await fetchPiChunk(start, chunkSize);
+            let requestEnd = Date.now();
+            
+            // Update average request time
+            let requestTime = requestEnd - requestStart;
+            averageTimePerChunk = averageTimePerChunk === 0 ? requestTime : (averageTimePerChunk + requestTime) / 2;
+
+            let position = piDigits.indexOf(sequence);
+
+            if (position !== -1) {
+                let before = piDigits.slice(Math.max(0, position - 5), position);
+                let after = piDigits.slice(position + sequence.length, position + sequence.length + 5);
+
+                resultElement.innerHTML = `<span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>`;
+                found = true;
+                break;
             }
-            
-            loadingElement.style.display = "block";
-            resultElement.innerText = "";
-            
-            try {
-                let start = 0;
-                const chunkSize = 1000000;
-                const maxDigits = 100000000;
-                let found = false;
-                
-                while (start < maxDigits) {
-                    let piDigits = await fetchPiChunk(start, chunkSize);
-                    let position = piDigits.indexOf(sequence);
-                    
-                    if (position !== -1) {
-                        let before = piDigits.slice(Math.max(0, position - 5), position);
-                        let after = piDigits.slice(position + sequence.length, position + sequence.length + 5);
-                        
-                        resultElement.innerHTML = `<span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>`;
-                        found = true;
-                        break;
-                    }
-                    start += chunkSize;
-                }
-                
-                if (!found) {
-                    resultElement.innerText = "Sequence not found in first 100 million digits.";
-                }
-            } catch (error) {
-                resultElement.innerText = "Error fetching data. Try again later.";
-            }
-            
+        } catch (error) {
+            resultElement.innerText = "Error fetching data. Try again later.";
             loadingElement.style.display = "none";
+            return;
         }
+
+        start += chunkSize;
+
+        // Calculate estimated remaining time
+        let chunksRemaining = (maxDigits - start) / chunkSize;
+        let estimatedTime = Math.round((chunksRemaining * averageTimePerChunk) / 1000); // Convert to seconds
+
+        resultElement.innerText = `Searching... Estimated wait time: ~${estimatedTime} seconds`;
+    }
+
+    if (!found) {
+        resultElement.innerText = "Sequence not found in first 100 million digits.";
+    }
+
+    loadingElement.style.display = "none";
+}
+
     </script>
 </body>
 </html>
