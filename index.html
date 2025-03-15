@@ -31,11 +31,10 @@
             animation: ticker 5s linear infinite;
         }
         @keyframes ticker {
-            0% { transform: translateX(100%); visibility: visible; }
-            95% { visibility: visible; }
-            100% { transform: translateX(-100%); visibility: hidden; }
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
         }
-
+        
         input {
             padding: 10px;
             margin: 10px;
@@ -52,170 +51,106 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            transition: background 0.3s;
-        }
-        button:hover {
-            background-color: #0056b3;
         }
         #result {
             margin-top: 20px;
             font-weight: bold;
             font-size: 18px;
         }
-        .grey { color: grey; }
-        .black { color: black; font-weight: bold; }
-
-        /* Settings Button */
         .settings-button {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: #ff9800;
+            background: #007bff;
             color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 50%;
-            font-size: 18px;
+            padding: 10px;
+            border-radius: 5px;
             cursor: pointer;
         }
-
-        /* Settings Popup */
-        .settings-popup {
+        .settings-panel {
             display: none;
             position: fixed;
             bottom: 50px;
             right: 20px;
             background: white;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
-            text-align: left;
-            width: 250px;
-        }
-        .settings-popup label {
-            font-size: 14px;
-            font-weight: bold;
-        }
-        .settings-popup input {
-            width: 100%;
-            padding: 5px;
-            margin: 5px 0;
-            font-size: 14px;
-        }
-        .settings-popup button {
-            width: 100%;
-            margin-top: 10px;
-            background: #28a745;
+            border: 2px solid #007bff;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-
     <div class="ticker-container">
         <div class="ticker-text" id="piTicker">Loading Pi facts...</div>
     </div>
 
     <h1>Search for Numbers in Pi</h1>
-    <p>Enter a number sequence to search within the first <span id="digitsLimit">1,000,000</span> digits of Pi:</p>
+    <p>Enter a number sequence to search within Pi digits:</p>
     <input type="text" id="searchInput" placeholder="Enter numbers...">
     <button onclick="searchPi()">Search</button>
-    <button onclick="toggleLetterMode()">Letter Mode</button>
     <p id="result"></p>
 
-    <!-- Settings Button -->
-    <button class="settings-button" onclick="toggleSettings()">⚙</button>
-
-    <!-- Settings Popup -->
-    <div class="settings-popup" id="settingsPopup">
-        <h3>Settings</h3>
-        <label for="digitsInput">Digits to Check (10,000 - 2,000,000,000):</label>
-        <input type="number" id="digitsInput" min="10000" max="2000000000" value="1000000">
-        <button onclick="applySettings()">Apply</button>
+    <button class="settings-button" onclick="toggleSettings()">⚙ Settings</button>
+    <div class="settings-panel" id="settingsPanel">
+        <label>Digits to Check:</label>
+        <input type="number" id="digitLimit" value="1000000" min="10000" max="2000000000">
+        <button onclick="saveSettings()">Save</button>
     </div>
-
+    
     <script>
-        let letterMode = false;
-        let numberOfDigits = 1000000; // Default to 1 million
+        let digitLimit = 1000000; // Default 1M digits
 
-        function toggleLetterMode() {
-            letterMode = !letterMode;
-            document.getElementById("searchInput").placeholder = letterMode ? "Enter letters..." : "Enter numbers...";
+        function toggleSettings() {
+            let panel = document.getElementById("settingsPanel");
+            panel.style.display = panel.style.display === "none" ? "block" : "none";
         }
 
-        function convertLettersToNumbers(input) {
-            return input.toLowerCase().split('').map(char => {
-                let code = char.charCodeAt(0);
-                return code >= 97 && code <= 122 ? (code - 97).toString() : char;
-            }).join('');
+        function saveSettings() {
+            let newLimit = parseInt(document.getElementById("digitLimit").value);
+            if (newLimit >= 10000 && newLimit <= 2000000000) {
+                digitLimit = newLimit;
+                alert("Settings saved!");
+            } else {
+                alert("Enter a value between 10,000 and 2 billion.");
+            }
         }
 
         async function searchPi() {
             let sequence = document.getElementById("searchInput").value;
             let resultElement = document.getElementById("result");
-
             if (!sequence) {
                 resultElement.innerText = "Please enter a valid input.";
                 return;
             }
 
-            if (letterMode) {
-                sequence = convertLettersToNumbers(sequence);
-            }
+            let piDigits = "";
+            let chunkSize = 1000000;
+            let found = false;
 
-            try {
-                let response = await fetch(`https://api.pi.delivery/v1/pi?start=0&numberOfDigits=${numberOfDigits}&radix=10`);
-                let data = await response.json();
-                let piDigits = data.content;
-
-                let position = piDigits.indexOf(sequence);
-
-                if (position !== -1) {
-                    let before = piDigits.slice(Math.max(0, position - 5), position);
-                    let after = piDigits.slice(position + sequence.length, position + sequence.length + 5);
-                    resultElement.innerHTML = `<span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>`;
-                } else {
-                    resultElement.innerText = "Sequence not found in first " + numberOfDigits.toLocaleString() + " digits.";
+            for (let start = 0; start < digitLimit; start += chunkSize) {
+                try {
+                    let response = await fetch(`https://api.pi.delivery/v1/pi?start=${start}&numberOfDigits=${chunkSize}&radix=10`);
+                    let data = await response.json();
+                    piDigits += data.content;
+                    
+                    let position = piDigits.indexOf(sequence);
+                    if (position !== -1) {
+                        let before = piDigits.slice(Math.max(0, position - 5), position);
+                        let after = piDigits.slice(position + sequence.length, position + sequence.length + 5);
+                        resultElement.innerHTML = `<span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>`;
+                        found = true;
+                        break;
+                    }
+                } catch (error) {
+                    resultElement.innerText = "Error fetching data. Try again later.";
+                    return;
                 }
-            } catch (error) {
-                resultElement.innerText = "Error fetching data. Try again later.";
+            }
+
+            if (!found) {
+                resultElement.innerText = "Sequence not found in the given number of digits.";
             }
         }
-
-        async function loadPiFacts() {
-            try {
-                let response = await fetch('list.json');
-                let facts = await response.json();
-                let piTicker = document.getElementById("piTicker");
-                
-                function updateTicker() {
-                    let randomFact = facts[Math.floor(Math.random() * facts.length)];
-                    piTicker.innerText = randomFact;
-                    piTicker.style.animation = "none";
-                    void piTicker.offsetWidth;
-                    piTicker.style.animation = "ticker 15s linear infinite";
-                }
-
-                updateTicker();
-                setInterval(updateTicker, 15000);
-            } catch (error) {
-                document.getElementById("piTicker").innerText = "Error loading Pi facts.";
-            }
-        }
-
-        function toggleSettings() {
-            let popup = document.getElementById("settingsPopup");
-            popup.style.display = popup.style.display === "block" ? "none" : "block";
-        }
-
-        function applySettings() {
-            let input = document.getElementById("digitsInput").value;
-            let newLimit = Math.max(10000, Math.min(2000000000, input));
-            numberOfDigits = newLimit;
-            document.getElementById("digitsLimit").innerText = numberOfDigits.toLocaleString();
-            toggleSettings();
-        }
-
-        loadPiFacts();
     </script>
 </body>
 </html>
