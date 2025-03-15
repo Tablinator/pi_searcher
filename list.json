@@ -1,14 +1,22 @@
-{
-  "facts": [
-    "Pi is an irrational number, meaning it has an infinite number of decimal places.",
-    "The first 100 digits of Pi are: 3.1415926535 8979323846 2643383279...",
-    "Pi has been studied for over 4,000 years!",
-    "The symbol π was first used in 1706 by William Jones.",
-    "The world record for memorizing Pi is over 70,000 digits!",
-    "NASA uses only 15 decimal places of Pi for interplanetary calculations.",
-    "The value of Pi was first estimated by Archimedes of Syracuse.",
-    "Albert Einstein’s birthday is on Pi Day (March 14th)!",
-    "In 2019, Google calculated Pi to 31.4 trillion decimal places.",
-    "Pi appears in formulas for circles, waves, and even quantum physics."
-  ]
-}
+[
+    "Pi is an irrational number, meaning it has no repeating pattern.",
+    "Pi has been calculated to over 62 trillion digits!",
+    "NASA uses only 15 digits of Pi for interplanetary calculations.",
+    "Pi Day is celebrated on March 14th (3/14) each year.",
+    "The Guinness World Record for reciting Pi is over 70,000 digits!",
+    "Archimedes of Syracuse approximated Pi over 2,000 years ago.",
+    "Pi is used in physics, engineering, and even probability theory.",
+    "Albert Einstein was born on Pi Day!",
+    "Pi appears in formulas related to circles, waves, and quantum mechanics.",
+    "Some people memorize thousands of Pi digits as a mental challenge.",
+    "Pi helps calculate the area of circles: A = πr².",
+    "The first 10 digits of Pi are 3.1415926535.",
+    "Pi is the ratio of a circle's circumference to its diameter.",
+    "The symbol π was first used by William Jones in 1706.",
+    "Pi plays a role in Einstein's field equations in general relativity.",
+    "Pi appears in Fourier transforms, used in sound and image processing.",
+    "Computers have calculated Pi to over 62 trillion digits!",
+    "Pi's digits never repeat in any known pattern.",
+    "The value of Pi has fascinated mathematicians for centuries.",
+    "Pi is essential for GPS calculations and satellite positioning."
+]
