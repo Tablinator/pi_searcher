@@ -10,15 +10,15 @@
             text-align: center;
             padding: 20px;
             background-color: #f4f4f4;
-            position: relative;
         }
         .ticker-container {
             width: 100%;
-            height: 20px;
+            height: 20px; /* Increased height */
             background: #007bff;
             color: white;
             overflow: hidden;
             white-space: nowrap;
+            position: relative;
             padding: 15px 0;
             font-size: 18px;
             font-weight: bold;
@@ -26,17 +26,33 @@
             align-items: center;
             justify-content: center;
         }
-        input, button {
+        .ticker-text {
+            white-space: nowrap;
+            animation: ticker 5s linear infinite;
+        }
+@keyframes ticker {
+    0% { transform: translateX(100%); visibility: visible; }
+    95% { visibility: visible; }  /* Keeps it visible while moving */
+    100% { transform: translateX(-100%); visibility: hidden; } /* Hides when fully off-screen */
+}
+
+        input {
             padding: 10px;
             margin: 10px;
+            width: 250px;
             font-size: 16px;
+            border: 2px solid #007bff;
             border-radius: 5px;
         }
         button {
+            padding: 10px 20px;
+            font-size: 16px;
             background-color: #007bff;
             color: white;
             border: none;
+            border-radius: 5px;
             cursor: pointer;
+            transition: background 0.3s;
         }
         button:hover {
             background-color: #0056b3;
@@ -48,78 +64,27 @@
         }
         .grey { color: grey; }
         .black { color: black; font-weight: bold; }
-        .settings-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #007bff;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 50%;
-            font-size: 20px;
-            border: none;
-            cursor: pointer;
-        }
-        .settings-window {
-            display: none;
-            position: fixed;
-            bottom: 60px;
-            right: 20px;
-            background: white;
-            padding: 20px;
-            border: 2px solid #007bff;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-        }
     </style>
 </head>
 <body>
 
     <div class="ticker-container">
-        <div id="piTicker">Loading Pi facts...</div>
+        <div class="ticker-text" id="piTicker">Loading Pi facts...</div>
     </div>
 
     <h1>Search for Numbers in Pi</h1>
-    <p>Enter a number sequence to search within Pi:</p>
+    <p>Enter a number sequence to search within the first 100 million digits of Pi:</p>
     <input type="text" id="searchInput" placeholder="Enter numbers...">
     <button onclick="searchPi()">Search</button>
     <button onclick="toggleLetterMode()">Letter Mode</button>
     <p id="result"></p>
-    <p id="loadingStatus"></p>
-
-    <!-- Settings Button -->
-    <button class="settings-btn" onclick="toggleSettings()">⚙</button>
-
-    <!-- Settings Window -->
-    <div class="settings-window" id="settingsWindow">
-        <p><b>Set Number of Digits:</b></p>
-        <input type="number" id="digitInput" value="1000000" min="10000" max="2000000000">
-        <button onclick="applySettings()">Apply</button>
-    </div>
-
+    
     <script>
         let letterMode = false;
-        let maxDigits = 1000000;
 
         function toggleLetterMode() {
             letterMode = !letterMode;
             document.getElementById("searchInput").placeholder = letterMode ? "Enter letters..." : "Enter numbers...";
-        }
-
-        function toggleSettings() {
-            let settings = document.getElementById("settingsWindow");
-            settings.style.display = settings.style.display === "block" ? "none" : "block";
-        }
-
-        function applySettings() {
-            let newDigits = parseInt(document.getElementById("digitInput").value);
-            if (newDigits >= 10000 && newDigits <= 2000000000) {
-                maxDigits = newDigits;
-            } else {
-                alert("Enter a value between 10,000 and 2 billion.");
-                document.getElementById("digitInput").value = maxDigits;
-            }
-            document.getElementById("settingsWindow").style.display = "none";
         }
 
         function convertLettersToNumbers(input) {
@@ -132,7 +97,6 @@
         async function searchPi() {
             let sequence = document.getElementById("searchInput").value;
             let resultElement = document.getElementById("result");
-            let loadingStatus = document.getElementById("loadingStatus");
 
             if (!sequence) {
                 resultElement.innerText = "Please enter a valid input.";
@@ -143,39 +107,47 @@
                 sequence = convertLettersToNumbers(sequence);
             }
 
-            resultElement.innerText = "";
-            loadingStatus.innerText = "Fetching Pi digits...";
+            try {
+                let response = await fetch(https://api.pi.delivery/v1/pi?start=0&numberOfDigits=1000000&radix=10);
+                let data = await response.json();
+                let piDigits = data.content;
 
-            let chunkSize = 1000000;
-            let start = 0;
+                let position = piDigits.indexOf(sequence);
 
-            while (start < maxDigits) {
-                try {
-                    let response = await fetch(`https://api.pi.delivery/v1/pi?start=${start}&numberOfDigits=${chunkSize}&radix=10`);
-                    if (!response.ok) throw new Error("API Error");
-                    let data = await response.json();
-                    
-                    let position = data.content.indexOf(sequence);
-                    if (position !== -1) {
-                        let before = data.content.slice(Math.max(0, position - 5), position);
-                        let after = data.content.slice(position + sequence.length, position + sequence.length + 5);
-                        resultElement.innerHTML = `<span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>`;
-                        loadingStatus.innerText = "Search complete!";
-                        return;
-                    }
+                if (position !== -1) {
+                    let before = piDigits.slice(Math.max(0, position - 5), position);
+                    let after = piDigits.slice(position + sequence.length, position + sequence.length + 5);
+                    resultElement.innerHTML = <span class='grey'>${before}</span><span class='black'>${sequence}</span><span class='grey'>${after}</span>;
+                } else {
+                    resultElement.innerText = "Sequence not found in first 1 million digits.";
+                }
+            } catch (error) {
+                resultElement.innerText = "Error fetching data. Try again later.";
+            }
+        }
 
-                    loadingStatus.innerText = `Loaded ${start + chunkSize} / ${maxDigits} digits...`;
-                } catch (error) {
-                    resultElement.innerText = "Error fetching data. Try again later.";
-                    return;
+        async function loadPiFacts() {
+            try {
+                let response = await fetch('list.json');
+                let facts = await response.json();
+                let piTicker = document.getElementById("piTicker");
+                
+                function updateTicker() {
+                    let randomFact = facts[Math.floor(Math.random() * facts.length)];
+                    piTicker.innerText = randomFact;
+                    piTicker.style.animation = "none";
+                    void piTicker.offsetWidth;
+                    piTicker.style.animation = "ticker 15s linear infinite";
                 }
 
-                start += chunkSize;
+                updateTicker();
+                setInterval(updateTicker, 15000);
+            } catch (error) {
+                document.getElementById("piTicker").innerText = "Error loading Pi facts.";
             }
-
-            loadingStatus.innerText = "Search complete!";
-            resultElement.innerText = "Sequence not found.";
         }
+
+        loadPiFacts();
     </script>
 </body>
 </html>
