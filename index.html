@@ -28,12 +28,14 @@
         }
         .ticker-text {
             white-space: nowrap;
-            animation: ticker 15s linear infinite;
+            animation: ticker 8s linear infinite;
         }
-        @keyframes ticker {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
+@keyframes ticker {
+    0% { transform: translateX(100%); visibility: visible; }
+    95% { visibility: visible; }  /* Keeps it visible while moving */
+    100% { transform: translateX(-100%); visibility: hidden; } /* Hides when fully off-screen */
+}
+
         input {
             padding: 10px;
             margin: 10px;
