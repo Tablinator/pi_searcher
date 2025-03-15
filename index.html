@@ -128,7 +128,7 @@
 
         async function loadPiFacts() {
             try {
-                let response = await fetch('l.json');
+                let response = await fetch('list.json');
                 let facts = await response.json();
                 let piTicker = document.getElementById("piTicker");
                 
