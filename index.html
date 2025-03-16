@@ -134,59 +134,63 @@
         }
 
         async function searchPi() {
-            let input = document.getElementById('searchInput').value;
-            if (!input) {
-                document.getElementById('result').innerText = "Please enter a valid input.";
-                return;
-            }
+    let input = document.getElementById('searchInput').value;
+    if (!input) {
+        document.getElementById('result').innerText = "Please enter a valid input.";
+        return;
+    }
+    
+    if (letterMode && isNaN(input)) {
+        input = convertLettersToNumbers(input);
+    }
+
+    document.getElementById('progressBar').style.display = 'block';
+    document.getElementById('progress').style.width = '0%';
+    document.getElementById('progress').innerText = '0%';
+    document.getElementById('result').innerText = "Searching...";
+
+    const chunkSize = 1000;
+    let found = false;
+    let position = -1;
+    let surroundingDigits = "";
+
+    for (let start = 0; start < totalDigits; start += chunkSize) {
+        try {
+            const response = await fetch(`https://api.pi.delivery/v1/pi?start=${start}&numberOfDigits=${chunkSize}&radix=10`);
+            if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
             
-            if (letterMode && isNaN(input)) {
-                input = convertLettersToNumbers(input);
+            const data = await response.json();
+            const piDigits = data.content.replace(".", "");
+            
+            position = piDigits.indexOf(input);
+            if (position !== -1) {
+                found = true;
+                position += start;
+
+                let before = piDigits.substring(Math.max(0, position - 5), position);
+                let after = piDigits.substring(position + input.length, position + input.length + 5);
+                surroundingDigits = `<span class='grey'>${before}</span><span class='black'>${input}</span><span class='grey'>${after}</span>`;
+                break;
             }
 
-            document.getElementById('progressBar').style.display = 'block';
-            document.getElementById('progress').style.width = '0%';
-            document.getElementById('progress').innerText = '0%';
-            document.getElementById('result').innerText = "Searching...";
-            
-            const chunkSize = 1000;
-            let found = false;
-            let position = -1;
-            let surroundingDigits = "";
+            let progress = Math.floor(((start + chunkSize) / totalDigits) * 100);
+            document.getElementById('progress').style.width = progress + '%';
+            document.getElementById('progress').innerText = progress + '%';
 
-            for (let start = 0; start < totalDigits; start += chunkSize) {
-                try {
-                    const response = await fetch(`https://api.pi.delivery/v1/pi?start=${start}&numberOfDigits=${chunkSize}&radix=10`);
-                    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-                    
-                    const data = await response.json();
-                    const piDigits = data.content.replace(".", "");
-                    
-                    position = piDigits.indexOf(input);
-                    if (position !== -1) {
-                        found = true;
-                        position += start;
-                        
-                        let before = piDigits.substring(Math.max(0, position - 5), position);
-                        let after = piDigits.substring(position + input.length, position + input.length + 5);
-                        surroundingDigits = `<span class='grey'>${before}</span><span class='black'>${input}</span><span class='grey'>${after}</span>`;
-                        break;
-                    }
-                    
-                    let progress = Math.floor(((start + chunkSize) / totalDigits) * 100);
-                    document.getElementById('progress').style.width = progress + '%';
-                    document.getElementById('progress').innerText = progress + '%';
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                } catch (error) {
-                    document.getElementById('result').innerText = "Error fetching digits. Please try again later.";
-                    document.getElementById('progressBar').style.display = 'none';
-                    return;
-                }
-            }
-            
+            // Small delay to avoid overwhelming the API
+            await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
+
+        } catch (error) {
+            document.getElementById('result').innerText = "Error fetching digits. Please try again later.";
             document.getElementById('progressBar').style.display = 'none';
-            document.getElementById('result').innerHTML = found ? surroundingDigits : "Not found in π.";
+            return;
         }
+    }
+
+    document.getElementById('progressBar').style.display = 'none';
+    document.getElementById('result').innerHTML = found ? surroundingDigits : "Not found in π.";
+}
+
     </script>
 </body>
 </html>
