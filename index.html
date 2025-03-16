@@ -178,7 +178,7 @@
             document.getElementById('progress').innerText = progress + '%';
 
             // Small delay to avoid overwhelming the API
-            await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
+            await new Promise(resolve => setTimeout(resolve, 100)); // 200ms delay
 
         } catch (error) {
             document.getElementById('result').innerText = "Error fetching digits. Please try again later.";
