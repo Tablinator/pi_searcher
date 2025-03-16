@@ -158,7 +158,7 @@
     for (let start = 0; start < totalDigits; start += chunkSize) {
         try {
             // Fetch first chunk
-            const response1 = await fetch(`https://api.pi.delivery/v1/pi?start=${start}&numberOfDigits=${chunkSize}&radix=10`);
+            const response1 = await fetch(`https://api.pi.delivery/v1/pi?start=${start}&numberOfDigits=${chunkSize}&radix=20`);
             if (!response1.ok) throw new Error(`API Error: ${response1.statusText}`);
             const data1 = await response1.json();
             let piDigits = data1.content.replace(".", "");  // Remove decimal point
