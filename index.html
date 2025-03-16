@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pi Number Searcher</title>
@@ -156,19 +157,26 @@
 
     for (let start = 0; start < totalDigits; start += chunkSize) {
         try {
-            const response = await fetch(`https://api.pi.delivery/v1/pi?start=${start}&numberOfDigits=${chunkSize}&radix=10`);
-            if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-            
-            const data = await response.json();
-            const piDigits = data.content.replace(".", "");
-            
+            // Fetch first chunk
+            const response1 = await fetch(`https://api.pi.delivery/v1/pi?start=${start}&numberOfDigits=${chunkSize}&radix=10`);
+            if (!response1.ok) throw new Error(`API Error: ${response1.statusText}`);
+            const data1 = await response1.json();
+            let piDigits = data1.content.replace(".", "");  // Remove decimal point
+
+            // Fetch next chunk (overlapping)
+            const response2 = await fetch(`https://api.pi.delivery/v1/pi?start=${start + chunkSize}&numberOfDigits=${input.length}&radix=10`);
+            if (!response2.ok) throw new Error(`API Error: ${response2.statusText}`);
+            const data2 = await response2.json();
+            piDigits += data2.content.replace(".", "");  // Append overlap
+
             position = piDigits.indexOf(input);
             if (position !== -1) {
                 found = true;
-                position += start;
+                position += start;  // Adjust global position
 
-                let before = piDigits.substring(Math.max(0, position - 5), position);
-                let after = piDigits.substring(position + input.length, position + input.length + 5);
+                // Extract up to 5 digits before and after
+                let before = piDigits.substring(Math.max(0, position - start - 5), position - start);
+                let after = piDigits.substring(position - start + input.length, position - start + input.length + 5);
                 surroundingDigits = `<span class='grey'>${before}</span><span class='black'>${input}</span><span class='grey'>${after}</span>`;
                 break;
             }
@@ -177,8 +185,7 @@
             document.getElementById('progress').style.width = progress + '%';
             document.getElementById('progress').innerText = progress + '%';
 
-            // Small delay to avoid overwhelming the API
-            await new Promise(resolve => setTimeout(resolve, 100)); // 200ms delay
+            await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to avoid API spam
 
         } catch (error) {
             document.getElementById('result').innerText = "Error fetching digits. Please try again later.";
@@ -190,6 +197,7 @@
     document.getElementById('progressBar').style.display = 'none';
     document.getElementById('result').innerHTML = found ? surroundingDigits : "Not found in π.";
 }
+
 
     </script>
 </body>
